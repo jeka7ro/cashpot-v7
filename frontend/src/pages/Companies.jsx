@@ -105,135 +105,90 @@ export default function Companies() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600"></div>
+      <div className="loading">
+        <div className="loading-spinner"></div>
       </div>
     );
   }
 
   return (
-    <div className="p-6">
-      <div className="flex justify-between items-center mb-6">
-        <div>
-          <h1 className="text-3xl font-bold text-gray-800">Companies</h1>
-          <p className="text-gray-600 mt-1">Manage gaming companies and their licenses</p>
-        </div>
-        <button
-          onClick={openModal}
-          className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors flex items-center"
-        >
-          <span className="mr-2">+</span>
-          Add Company
-        </button>
-      </div>
+    <div>
+      <h1 className="title">Companies</h1>
+      <p className="subtitle">Manage gaming companies and their licenses</p>
 
-      {/* Search and Filter */}
-      <div className="mb-6 flex gap-4">
+      <div className="search-bar">
         <input
           type="text"
           placeholder="Search companies..."
+          className="search-input"
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
-          className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
         />
-        <select
-          value={statusFilter}
-          onChange={(e) => setStatusFilter(e.target.value)}
-          className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-        >
-          <option value="">All Status</option>
-          <option value="active">Active</option>
-          <option value="inactive">Inactive</option>
-          <option value="suspended">Suspended</option>
-        </select>
+        <button onClick={openModal} className="btn btn-primary">+ Add Company</button>
+        <button className="btn btn-secondary">Bulk Edit (0)</button>
+        <button className="btn btn-danger">Bulk Delete (0)</button>
       </div>
 
       {error && (
-        <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg mb-4">
+        <div className="error-message">
           {error}
         </div>
       )}
 
-      <div className="bg-white rounded-lg shadow overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="min-w-full divide-y divide-gray-200">
-            <thead className="bg-gray-50">
-              <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Company
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  License
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Address
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Contact
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Status
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Created
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Actions
-                </th>
-              </tr>
-            </thead>
-            <tbody className="bg-white divide-y divide-gray-200">
-              {companies.map((company) => (
-                <tr key={company.id} className="hover:bg-gray-50">
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="flex items-center">
-                      <div className="text-sm font-medium text-gray-900">🏢 {company.name}</div>
-                    </div>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                    {company.license}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                    {company.address}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="text-sm text-gray-900">{company.phone}</div>
-                    <div className="text-sm text-gray-500">{company.email}</div>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
-                      company.status === 'active' 
-                        ? 'bg-green-100 text-green-800' 
-                        : company.status === 'inactive'
-                        ? 'bg-yellow-100 text-yellow-800'
-                        : 'bg-red-100 text-red-800'
-                    }`}>
-                      {company.status}
-                    </span>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                    {new Date(company.createdAt).toLocaleDateString()}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                    <button
-                      onClick={() => handleEdit(company)}
-                      className="text-blue-600 hover:text-blue-900 mr-3"
-                    >
-                      ✏️
-                    </button>
-                    <button
-                      onClick={() => handleDelete(company.id)}
-                      className="text-red-600 hover:text-red-900"
-                    >
-                      🗑️
-                    </button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </div>
+      <table className="table">
+        <thead>
+          <tr>
+            <th>
+              <input type="checkbox" />
+            </th>
+            <th>Company</th>
+            <th>License</th>
+            <th>Address</th>
+            <th>Contact</th>
+            <th>Status</th>
+            <th>Created</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          {companies.map((company) => (
+            <tr key={company.id}>
+              <td>
+                <input type="checkbox" />
+              </td>
+              <td>🏢 {company.name}</td>
+              <td>{company.license}</td>
+              <td>{company.address}</td>
+              <td>
+                <div>{company.phone}</div>
+                <div style={{ fontSize: '12px', color: '#6b7280' }}>{company.email}</div>
+              </td>
+              <td>
+                <span className={`status ${company.status}`}>
+                  {company.status}
+                </span>
+              </td>
+              <td>{new Date(company.createdAt).toLocaleDateString()}</td>
+              <td>
+                <button 
+                  onClick={() => handleEdit(company)}
+                  className="btn btn-secondary" 
+                  style={{ padding: '4px 8px', margin: '0 2px' }}
+                >
+                  ✏️
+                </button>
+                <button 
+                  onClick={() => handleDelete(company.id)}
+                  className="btn btn-danger" 
+                  style={{ padding: '4px 8px', margin: '0 2px' }}
+                >
+                  🗑️
+                </button>
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
 
       {/* Modal */}
       {showModal && (
