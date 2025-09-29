@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cashpot V6 - Online Version</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #333;
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .login-form {
+            max-width: 400px;
+            margin: 0 auto;
+        }
+        .form-group {
+            margin-bottom: 20px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+        input {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            font-size: 16px;
+        }
+        button {
+            width: 100%;
+            padding: 12px;
+            background: #007bff;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            font-size: 16px;
+            cursor: pointer;
+        }
+        button:hover {
+            background: #0056b3;
+        }
+        .dashboard {
+            display: none;
+        }
+        .dashboard h2 {
+            color: #333;
+            margin-bottom: 20px;
+        }
+        .data-section {
+            margin-bottom: 30px;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 5px;
+        }
+        .data-section h3 {
+            color: #495057;
+            margin-bottom: 15px;
+        }
+        .data-item {
+            padding: 10px;
+            background: white;
+            margin-bottom: 10px;
+            border-radius: 5px;
+            border-left: 4px solid #007bff;
+        }
+        .error {
+            color: #dc3545;
+            background: #f8d7da;
+            padding: 10px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+        }
+        .success {
+            color: #155724;
+            background: #d4edda;
+            padding: 10px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+        }
+        .logout {
+            float: right;
+            background: #dc3545;
+            padding: 8px 16px;
+            color: white;
+            text-decoration: none;
+            border-radius: 5px;
+        }
+        .logout:hover {
+            background: #c82333;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🎰 Cashpot V6 - Online Version</h1>
+        
+        <div id="loginSection" class="login-form">
+            <h2>Login</h2>
+            <div id="errorMessage" class="error" style="display: none;"></div>
+            <div id="successMessage" class="success" style="display: none;"></div>
+            
+            <div class="form-group">
+                <label for="username">Username:</label>
+                <input type="text" id="username" value="admin" required>
+            </div>
+            
+            <div class="form-group">
+                <label for="password">Password:</label>
+                <input type="password" id="password" value="admin123" required>
+            </div>
+            
+            <button onclick="login()">Login</button>
+        </div>
+        
+        <div id="dashboard" class="dashboard">
+            <a href="#" class="logout" onclick="logout()">Logout</a>
+            <h2>Dashboard</h2>
+            
+            <div class="data-section">
+                <h3>Companies</h3>
+                <div id="companiesList"></div>
+            </div>
+            
+            <div class="data-section">
+                <h3>Locations</h3>
+                <div id="locationsList"></div>
+            </div>
+            
+            <div class="data-section">
+                <h3>Providers</h3>
+                <div id="providersList"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE_URL = 'https://cashpot-simple-backend.onrender.com/api';
+        
+        function showError(message) {
+            document.getElementById('errorMessage').textContent = message;
+            document.getElementById('errorMessage').style.display = 'block';
+            document.getElementById('successMessage').style.display = 'none';
+        }
+        
+        function showSuccess(message) {
+            document.getElementById('successMessage').textContent = message;
+            document.getElementById('successMessage').style.display = 'block';
+            document.getElementById('errorMessage').style.display = 'none';
+        }
+        
+        function hideMessages() {
+            document.getElementById('errorMessage').style.display = 'none';
+            document.getElementById('successMessage').style.display = 'none';
+        }
+        
+        async function login() {
+            const username = document.getElementById('username').value;
+            const password = document.getElementById('password').value;
+            
+            try {
+                const response = await fetch(`${API_BASE_URL}/auth/login`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ username, password })
+                });
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    localStorage.setItem('token', data.token);
+                    localStorage.setItem('user', JSON.stringify(data.user));
+                    showSuccess('Login successful!');
+                    loadDashboard();
+                } else {
+                    const error = await response.json();
+                    showError(error.error || 'Login failed');
+                }
+            } catch (error) {
+                showError('Connection error. Please try again.');
+                console.error('Login error:', error);
+            }
+        }
+        
+        function logout() {
+            localStorage.removeItem('token');
+            localStorage.removeItem('user');
+            document.getElementById('loginSection').style.display = 'block';
+            document.getElementById('dashboard').style.display = 'none';
+            hideMessages();
+        }
+        
+        async function loadDashboard() {
+            try {
+                // Load companies
+                const companiesResponse = await fetch(`${API_BASE_URL}/companies`);
+                const companies = await companiesResponse.json();
+                displayData('companiesList', companies);
+                
+                // Load locations
+                const locationsResponse = await fetch(`${API_BASE_URL}/locations`);
+                const locations = await locationsResponse.json();
+                displayData('locationsList', locations);
+                
+                // Load providers
+                const providersResponse = await fetch(`${API_BASE_URL}/providers`);
+                const providers = await providersResponse.json();
+                displayData('providersList', providers);
+                
+                document.getElementById('loginSection').style.display = 'none';
+                document.getElementById('dashboard').style.display = 'block';
+                
+            } catch (error) {
+                showError('Failed to load data');
+                console.error('Dashboard error:', error);
+            }
+        }
+        
+        function displayData(containerId, data) {
+            const container = document.getElementById(containerId);
+            container.innerHTML = '';
+            
+            if (Array.isArray(data)) {
+                data.forEach(item => {
+                    const div = document.createElement('div');
+                    div.className = 'data-item';
+                    div.innerHTML = `<strong>${item.name}</strong> - ${item.status || 'Active'}`;
+                    container.appendChild(div);
+                });
+            }
+        }
+        
+        // Check if user is already logged in
+        window.onload = function() {
+            const token = localStorage.getItem('token');
+            if (token) {
+                loadDashboard();
+            }
+        };
+    </script>
+</body>
+</html>
