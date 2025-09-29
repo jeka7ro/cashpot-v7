@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-const API_BASE_URL = 'https://cashpot-v7-backend.onrender.com/api';
+const API_BASE_URL = 'https://jeka7ro.github.io/cashpot-v7/api';
 
 const api = axios.create({
   baseURL: API_BASE_URL,
