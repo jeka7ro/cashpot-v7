@@ -11,6 +11,6 @@ services:
       - key: PORT
         value: 10000
       - key: MONGODB_URI
-        value: mongodb+srv://cashpot:admin123@cashpot-v7.abc123.mongodb.net/cashpot-v7?retryWrites=true&w=majority
+        value: mongodb+srv://admin:admin123@cashpot-v7.abc123.mongodb.net/cashpot-v7?retryWrites=true&w=majority
       - key: JWT_SECRET
-        value: cashpot-v7-super-secret-key-2024
+        value: cashpot-v7-super-secret-key-2024-production
