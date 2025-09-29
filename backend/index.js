@@ -49,7 +49,7 @@ const slots = Array.from({ length: 310 }, (_, i) => ({
 app.post('/api/auth/login', (req, res) => {
   const { username, password } = req.body;
   
-  if (username === 'admin' && password === 'password') {
+  if (username === 'admin' && password === 'admin123') {
     res.json({
       success: true,
       message: 'Login successful',
