@@ -1,44 +1,32 @@
-// WORKING API with localStorage - NO BACKEND NEEDED!
+// REAL API with MongoDB Atlas Backend
 
-// Get companies from localStorage
-const getCompanies = () => {
-  const stored = localStorage.getItem('cashpot_companies');
-  if (stored) {
-    return JSON.parse(stored);
-  }
-  
-  // Default companies
-  const defaultCompanies = [
-    {
-      id: 1,
-      name: 'Casino Palace',
-      license: 'LIC-001',
-      address: 'Strada Principală 123, București',
-      phone: '+40 21 123 4567',
-      email: 'info@casinopalace.ro',
-      status: 'active',
-      contactPerson: 'Ion Popescu',
-      notes: 'Companie principală',
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString()
+const API_BASE_URL = 'https://cashpot-v7-backend.onrender.com/api';
+
+// Helper function for API calls
+const apiCall = async (endpoint, options = {}) => {
+  const token = localStorage.getItem('cashpot_token');
+  const config = {
+    headers: {
+      'Content-Type': 'application/json',
+      ...(token && { Authorization: `Bearer ${token}` }),
+      ...options.headers,
     },
-    {
-      id: 2,
-      name: 'Gaming Center Max',
-      license: 'LIC-002',
-      address: 'Bd. Unirii 45, Cluj-Napoca',
-      phone: '+40 264 987 654',
-      email: 'contact@gamingmax.ro',
-      status: 'active',
-      contactPerson: 'Maria Ionescu',
-      notes: 'Centru de gaming modern',
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString()
+    ...options,
+  };
+
+  try {
+    const response = await fetch(`${API_BASE_URL}${endpoint}`, config);
+    const data = await response.json();
+    
+    if (!response.ok) {
+      throw { response: { status: response.status, data } };
     }
-  ];
-  
-  localStorage.setItem('cashpot_companies', JSON.stringify(defaultCompanies));
-  return defaultCompanies;
+    
+    return { data };
+  } catch (error) {
+    console.error('API Error:', error);
+    throw error;
+  }
 };
 
 // Save companies to localStorage
@@ -57,199 +45,72 @@ const delay = (ms) => new Promise(resolve => setTimeout(resolve, ms));
 
 export const authAPI = {
   login: async (username, password) => {
-    await delay(500); // Simulate network delay
-    if (username === 'admin' && password === 'admin123') {
-      localStorage.setItem('cashpot_token', 'working-token-12345');
-      return {
-        data: {
-          success: true,
-          message: 'Login successful',
-          token: 'working-token-12345',
-          user: {
-            id: 1,
-            username: 'admin',
-            firstName: 'Administrator',
-            lastName: 'Sistem',
-            role: 'admin'
-          }
-        }
-      };
-    } else {
-      throw { response: { status: 401, data: { error: 'Invalid credentials' } } };
-    }
+    return await apiCall('/auth/login', {
+      method: 'POST',
+      body: JSON.stringify({ username, password })
+    });
   },
   
   logout: async () => {
-    await delay(200);
     localStorage.removeItem('cashpot_token');
     return { data: { success: true } };
   },
   
   verify: async () => {
-    await delay(200);
-    const token = localStorage.getItem('cashpot_token');
-    if (token === 'working-token-12345') {
-      return {
-        data: {
-          success: true,
-          user: {
-            id: 1,
-            username: 'admin',
-            firstName: 'Administrator',
-            lastName: 'Sistem',
-            role: 'admin'
-          }
-        }
-      };
-    } else {
-      throw { response: { status: 401, data: { error: 'Invalid token' } } };
-    }
+    return await apiCall('/auth/verify');
   },
   
   register: async (userData) => {
-    await delay(500);
-    return { data: { success: true, user: userData } };
+    return await apiCall('/auth/register', {
+      method: 'POST',
+      body: JSON.stringify(userData)
+    });
   }
 };
 
 export const companiesAPI = {
   list: async (params = {}) => {
-    await delay(300);
-    let companies = getCompanies();
+    const queryParams = new URLSearchParams();
+    if (params.search) queryParams.append('search', params.search);
+    if (params.status) queryParams.append('status', params.status);
+    if (params.page) queryParams.append('page', params.page);
+    if (params.limit) queryParams.append('limit', params.limit);
     
-    // Apply search filter
-    if (params.search) {
-      const search = params.search.toLowerCase();
-      companies = companies.filter(c => 
-        c.name.toLowerCase().includes(search) ||
-        c.license.toLowerCase().includes(search) ||
-        c.email.toLowerCase().includes(search)
-      );
-    }
+    const queryString = queryParams.toString();
+    const endpoint = queryString ? `/companies?${queryString}` : '/companies';
     
-    // Apply status filter
-    if (params.status) {
-      companies = companies.filter(c => c.status === params.status);
-    }
-    
-    return {
-      data: {
-        success: true,
-        data: companies,
-        pagination: {
-          current: 1,
-          pages: 1,
-          total: companies.length
-        }
-      }
-    };
+    return await apiCall(endpoint);
   },
   
   get: async (id) => {
-    await delay(200);
-    const companies = getCompanies();
-    const company = companies.find(c => c.id == id);
-    if (!company) {
-      throw { response: { status: 404, data: { error: 'Company not found' } } };
-    }
-    return { data: { success: true, data: company } };
+    return await apiCall(`/companies/${id}`);
   },
   
   create: async (data) => {
-    await delay(500);
-    const companies = getCompanies();
-    
-    // Check if license exists
-    if (companies.find(c => c.license === data.license)) {
-      throw { response: { status: 400, data: { error: 'License already exists' } } };
-    }
-    
-    const newCompany = {
-      id: getNextId(),
-      ...data,
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString()
-    };
-    
-    companies.push(newCompany);
-    saveCompanies(companies);
-    
-    return {
-      data: {
-        success: true,
-        data: newCompany,
-        message: 'Company created successfully'
-      }
-    };
+    return await apiCall('/companies', {
+      method: 'POST',
+      body: JSON.stringify(data)
+    });
   },
   
   update: async (id, data) => {
-    await delay(400);
-    const companies = getCompanies();
-    const index = companies.findIndex(c => c.id == id);
-    
-    if (index === -1) {
-      throw { response: { status: 404, data: { error: 'Company not found' } } };
-    }
-    
-    // Check if license exists (excluding current company)
-    if (data.license && companies.find(c => c.license === data.license && c.id != id)) {
-      throw { response: { status: 400, data: { error: 'License already exists' } } };
-    }
-    
-    companies[index] = {
-      ...companies[index],
-      ...data,
-      updatedAt: new Date().toISOString()
-    };
-    
-    saveCompanies(companies);
-    
-    return {
-      data: {
-        success: true,
-        data: companies[index],
-        message: 'Company updated successfully'
-      }
-    };
+    return await apiCall(`/companies/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(data)
+    });
   },
   
   delete: async (id) => {
-    await delay(300);
-    const companies = getCompanies();
-    const index = companies.findIndex(c => c.id == id);
-    
-    if (index === -1) {
-      throw { response: { status: 404, data: { error: 'Company not found' } } };
-    }
-    
-    companies.splice(index, 1);
-    saveCompanies(companies);
-    
-    return {
-      data: {
-        success: true,
-        message: 'Company deleted successfully'
-      }
-    };
+    return await apiCall(`/companies/${id}`, {
+      method: 'DELETE'
+    });
   },
   
   bulkDelete: async (ids) => {
-    await delay(400);
-    const companies = getCompanies();
-    const initialLength = companies.length;
-    
-    const filteredCompanies = companies.filter(c => !ids.includes(c.id));
-    saveCompanies(filteredCompanies);
-    
-    const deletedCount = initialLength - filteredCompanies.length;
-    
-    return {
-      data: {
-        success: true,
-        message: `${deletedCount} companies deleted successfully`
-      }
-    };
+    return await apiCall('/companies/bulk-delete', {
+      method: 'POST',
+      body: JSON.stringify({ ids })
+    });
   }
 };
 
