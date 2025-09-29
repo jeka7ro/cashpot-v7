@@ -21,7 +21,7 @@ export function AuthProvider({ children }) {
 
   const checkAuth = async () => {
     try {
-      const token = localStorage.getItem('token');
+      const token = localStorage.getItem('cashpot_token');
       if (!token) {
         setLoading(false);
         return;
@@ -31,11 +31,11 @@ export function AuthProvider({ children }) {
       if (response.data && response.data.user) {
         setUser(response.data.user);
       } else {
-        localStorage.removeItem('token');
+        localStorage.removeItem('cashpot_token');
       }
     } catch (error) {
       console.error('Auth check failed:', error);
-      localStorage.removeItem('token');
+      localStorage.removeItem('cashpot_token');
     } finally {
       setLoading(false);
     }
@@ -45,7 +45,7 @@ export function AuthProvider({ children }) {
     try {
       const response = await authAPI.login(username, password);
       if (response.data && response.data.success) {
-        localStorage.setItem('token', response.data.token);
+        localStorage.setItem('cashpot_token', response.data.token);
         setUser(response.data.user);
         return { success: true };
       } else {
@@ -63,7 +63,7 @@ export function AuthProvider({ children }) {
     } catch (error) {
       console.error('Logout error:', error);
     } finally {
-      localStorage.removeItem('token');
+      localStorage.removeItem('cashpot_token');
       setUser(null);
     }
   };
