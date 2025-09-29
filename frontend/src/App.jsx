@@ -2,6 +2,12 @@ import { useState, useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import LoginPage from './pages/LoginPage';
 import Dashboard from './pages/Dashboard';
+import Companies from './pages/Companies';
+import Locations from './pages/Locations';
+import Providers from './pages/Providers';
+import Cabinets from './pages/Cabinets';
+import GameMixes from './pages/GameMixes';
+import Slots from './pages/Slots';
 import Layout from './components/Layout';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import './App.css';
@@ -30,19 +36,19 @@ function AppContent() {
         <Routes>
           <Route path="/" element={<Navigate to="/dashboard" replace />} />
           <Route path="/dashboard" element={<Dashboard />} />
-          <Route path="/companies" element={<div>Companies Page</div>} />
-          <Route path="/locations" element={<div>Locations Page</div>} />
-          <Route path="/providers" element={<div>Providers Page</div>} />
-          <Route path="/cabinets" element={<div>Cabinets Page</div>} />
-          <Route path="/game-mixes" element={<div>Game Mixes Page</div>} />
-          <Route path="/slots" element={<div>Slots Page</div>} />
-          <Route path="/warehouse" element={<div>Warehouse Page</div>} />
-          <Route path="/metrology" element={<div>Metrology Page</div>} />
-          <Route path="/jackpots" element={<div>Jackpots Page</div>} />
-          <Route path="/invoices" element={<div>Invoices Page</div>} />
-          <Route path="/onjn-reports" element={<div>ONJN Reports Page</div>} />
-          <Route path="/legal-documents" element={<div>Legal Documents Page</div>} />
-          <Route path="/users" element={<div>Users Page</div>} />
+          <Route path="/companies" element={<Companies />} />
+          <Route path="/locations" element={<Locations />} />
+          <Route path="/providers" element={<Providers />} />
+          <Route path="/cabinets" element={<Cabinets />} />
+          <Route path="/game-mixes" element={<GameMixes />} />
+          <Route path="/slots" element={<Slots />} />
+          <Route path="/warehouse" element={<div className="card"><h1 className="title">Warehouse</h1><p className="subtitle">Coming soon...</p></div>} />
+          <Route path="/metrology" element={<div className="card"><h1 className="title">Metrology</h1><p className="subtitle">Coming soon...</p></div>} />
+          <Route path="/jackpots" element={<div className="card"><h1 className="title">Jackpots</h1><p className="subtitle">Coming soon...</p></div>} />
+          <Route path="/invoices" element={<div className="card"><h1 className="title">Invoices</h1><p className="subtitle">Coming soon...</p></div>} />
+          <Route path="/onjn-reports" element={<div className="card"><h1 className="title">ONJN Reports</h1><p className="subtitle">Coming soon...</p></div>} />
+          <Route path="/legal-documents" element={<div className="card"><h1 className="title">Legal Documents</h1><p className="subtitle">Coming soon...</p></div>} />
+          <Route path="/users" element={<div className="card"><h1 className="title">Users</h1><p className="subtitle">Coming soon...</p></div>} />
         </Routes>
       </Layout>
     </Router>
