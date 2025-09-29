@@ -28,8 +28,8 @@ export function AuthProvider({ children }) {
       }
 
       const response = await authAPI.verify();
-      if (response.success) {
-        setUser(response.user);
+      if (response.data && response.data.user) {
+        setUser(response.data.user);
       } else {
         localStorage.removeItem('token');
       }
@@ -44,12 +44,12 @@ export function AuthProvider({ children }) {
   const login = async (username, password) => {
     try {
       const response = await authAPI.login(username, password);
-      if (response.success) {
-        localStorage.setItem('token', response.token);
-        setUser(response.user);
+      if (response.data && response.data.success) {
+        localStorage.setItem('token', response.data.token);
+        setUser(response.data.user);
         return { success: true };
       } else {
-        return { success: false, error: response.error };
+        return { success: false, error: response.data?.error || 'Login failed' };
       }
     } catch (error) {
       console.error('Login failed:', error);
