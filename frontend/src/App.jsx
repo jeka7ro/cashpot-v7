@@ -39,7 +39,7 @@ function AppContent() {
   }
 
   return (
-    <Router>
+    <Router basename="/cashpot-v7">
       <Layout>
         <Routes>
           <Route path="/" element={<Navigate to="/dashboard" replace />} />
