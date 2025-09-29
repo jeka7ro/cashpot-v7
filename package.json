@@ -1,20 +1,16 @@
 {
-  "name": "cashpot-v7-complete",
+  "name": "cashpot-v7-backend",
   "version": "7.0.1",
-  "description": "Complete Cashpot V7 Gaming Management System",
-  "main": "backend/server.js",
+  "description": "Cashpot V7 Backend API",
+  "main": "railway-backend.js",
   "scripts": {
-    "dev": "concurrently \"npm run backend\" \"npm run frontend\"",
-    "backend": "cd backend && node server.js",
-    "frontend": "cd frontend && npm run dev",
-    "build": "cd frontend && npm run build",
-    "start": "node backend/server.js",
-    "install-all": "npm install && cd backend && npm install && cd ../frontend && npm install"
+    "start": "node railway-backend.js"
   },
-  "keywords": ["gaming", "management", "casino", "slots"],
-  "author": "Eugeniuc Azmal",
-  "license": "MIT",
-  "devDependencies": {
-    "concurrently": "^8.2.2"
+  "dependencies": {
+    "express": "^4.18.2",
+    "cors": "^2.8.5"
+  },
+  "engines": {
+    "node": "18.x"
   }
 }
