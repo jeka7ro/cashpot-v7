@@ -3,6 +3,15 @@ const mongoose = require('mongoose');
 const cors = require('cors');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
+const multer = require('multer');
+const path = require('path');
+
+const config = {
+  NODE_ENV: process.env.NODE_ENV || 'production',
+  PORT: process.env.PORT || 3001,
+  MONGODB_URI: process.env.MONGODB_URI || 'mongodb+srv://admin:admin123@cashpot-v7.abc123.mongodb.net/cashpot-v7?retryWrites=true&w=majority',
+  JWT_SECRET: process.env.JWT_SECRET || 'cashpot-v7-super-secret-key-2024'
+};
 
 const app = express();
 
@@ -10,138 +19,126 @@ const app = express();
 app.use(cors());
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true }));
+app.use('/uploads', express.static('uploads'));
 
-// MongoDB connection
-const MONGODB_URI = process.env.MONGODB_URI || 'mongodb+srv://cashpot:admin123@cashpot-v7.abc123.mongodb.net/cashpot-v7?retryWrites=true&w=majority';
-const JWT_SECRET = process.env.JWT_SECRET || 'cashpot-v7-super-secret-key-2024';
+// Multer for file uploads
+const storage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    cb(null, 'uploads/');
+  },
+  filename: (req, file, cb) => {
+    cb(null, Date.now() + '-' + file.originalname);
+  }
+});
 
-// User Schema
-const userSchema = new mongoose.Schema({
-  username: { type: String, required: true, unique: true },
-  password: { type: String, required: true },
-  firstName: { type: String, required: true },
-  lastName: { type: String, required: true },
-  role: { type: String, default: 'admin' }
-}, { timestamps: true });
-
-// Company Schema
-const companySchema = new mongoose.Schema({
-  name: { type: String, required: true },
-  license: { type: String, required: true, unique: true },
-  address: { type: String, required: true },
-  phone: { type: String, required: true },
-  email: { type: String, required: true },
-  status: { type: String, enum: ['active', 'inactive', 'suspended'], default: 'active' },
-  contactPerson: { type: String, default: '' },
-  notes: { type: String, default: '' }
-}, { timestamps: true });
-
-// Models
-const User = mongoose.model('User', userSchema);
-const Company = mongoose.model('Company', companySchema);
+const upload = multer({ storage: storage });
 
 // Connect to MongoDB
-mongoose.connect(MONGODB_URI, {
+mongoose.connect(config.MONGODB_URI, {
   useNewUrlParser: true,
   useUnifiedTopology: true,
 })
 .then(() => {
-  console.log('✅ Connected to MongoDB');
-  createDefaultAdmin();
+  console.log('✅ Connected to MongoDB Atlas');
+  createDefaultData();
 })
 .catch(err => {
   console.error('❌ MongoDB connection error:', err);
-  console.log('⚠️  Using fallback data');
+  console.log('⚠️  Using mock data instead of MongoDB');
 });
 
-// Create default admin user
-async function createDefaultAdmin() {
+// Create default data
+async function createDefaultData() {
   try {
-    const adminExists = await User.findOne({ username: 'admin' });
-    
-    if (!adminExists) {
-      const hashedPassword = await bcrypt.hash('admin123', 12);
-      const admin = new User({
+    // Create default admin user
+    const User = require('./models/User');
+    const adminUser = await User.findOne({ username: 'admin' });
+    if (!adminUser) {
+      const hashedPassword = await bcrypt.hash('admin123', 10);
+      await User.create({
         username: 'admin',
         password: hashedPassword,
         firstName: 'Administrator',
         lastName: 'Sistem',
         role: 'admin'
       });
-      
-      await admin.save();
-      console.log('✅ Default admin user created');
+      console.log('Default admin user created.');
+    }
+
+    // Create default companies
+    const Company = require('./models/Company');
+    const companiesCount = await Company.countDocuments();
+    if (companiesCount === 0) {
+      await Company.insertMany([
+        {
+          name: 'Casino Palace',
+          license: 'LIC-001',
+          address: 'Strada Principală 123, București',
+          phone: '+40 21 123 4567',
+          email: 'info@casinopalace.ro',
+          status: 'active',
+          contactPerson: 'Ion Popescu',
+          notes: 'Companie principală',
+          createdBy: 'admin'
+        },
+        {
+          name: 'Gaming Center Max',
+          license: 'LIC-002',
+          address: 'Bd. Unirii 45, Cluj-Napoca',
+          phone: '+40 264 987 654',
+          email: 'contact@gamingmax.ro',
+          status: 'active',
+          contactPerson: 'Maria Ionescu',
+          notes: 'Centru de gaming modern',
+          createdBy: 'admin'
+        },
+        {
+          name: 'TRADE INVEST NETWORKssa',
+          license: 'LIC-003',
+          address: 'str. Popa Savu 78, ap.3 Sector 1',
+          phone: '0729030303',
+          email: '2@2.com',
+          status: 'active',
+          contactPerson: 'Alexandru Popescu',
+          notes: 'Retea de investitii',
+          createdBy: 'admin'
+        }
+      ]);
+      console.log('Default companies created.');
     }
   } catch (error) {
-    console.error('Error creating admin user:', error);
+    console.error('Error creating default data:', error);
   }
 }
 
-// Auth middleware
-const auth = (req, res, next) => {
-  try {
-    const token = req.header('Authorization')?.replace('Bearer ', '');
-    
-    if (!token) {
-      return res.status(401).json({ error: 'No token, authorization denied' });
-    }
-
-    const decoded = jwt.verify(token, JWT_SECRET);
-    req.user = decoded.user;
-    next();
-  } catch (error) {
-    res.status(401).json({ error: 'Token is not valid' });
-  }
-};
+// Health check route
+app.get('/api/health', (req, res) => {
+  res.json({ 
+    status: 'OK', 
+    version: '7.0.1', 
+    timestamp: new Date().toISOString(),
+    database: mongoose.connection.readyState === 1 ? 'Connected' : 'Disconnected'
+  });
+});
 
 // Auth routes
 app.post('/api/auth/login', async (req, res) => {
+  const { username, password } = req.body;
   try {
-    const { username, password } = req.body;
-
+    const User = require('./models/User');
     const user = await User.findOne({ username });
     if (!user) {
       return res.status(401).json({ error: 'Invalid credentials' });
     }
-
     const isMatch = await bcrypt.compare(password, user.password);
     if (!isMatch) {
       return res.status(401).json({ error: 'Invalid credentials' });
     }
-
-    const payload = {
-      user: {
-        id: user._id,
-        username: user.username,
-        firstName: user.firstName,
-        lastName: user.lastName,
-        role: user.role
-      }
-    };
-
-    const token = jwt.sign(payload, JWT_SECRET, { expiresIn: '24h' });
-
+    const token = jwt.sign({ id: user._id, role: user.role }, config.JWT_SECRET, { expiresIn: '24h' });
     res.json({
       success: true,
       message: 'Login successful',
       token,
-      user: payload.user
-    });
-  } catch (error) {
-    console.error('Login error:', error);
-    res.status(500).json({ error: 'Server error' });
-  }
-});
-
-app.get('/api/auth/verify', auth, async (req, res) => {
-  try {
-    const user = await User.findById(req.user.id).select('-password');
-    if (!user) {
-      return res.status(401).json({ error: 'User not found' });
-    }
-
-    res.json({
-      success: true,
       user: {
         id: user._id,
         username: user.username,
@@ -151,22 +148,55 @@ app.get('/api/auth/verify', auth, async (req, res) => {
       }
     });
   } catch (error) {
-    console.error('Verify error:', error);
-    res.status(500).json({ error: 'Server error' });
+    console.error('Login error:', error);
+    res.status(500).json({ error: 'Server error during login' });
   }
 });
 
-app.post('/api/auth/logout', auth, (req, res) => {
-  res.json({ success: true, message: 'Logout successful' });
+app.post('/api/auth/verify', (req, res) => {
+  const token = req.headers['authorization']?.split(' ')[1];
+  if (!token) {
+    return res.status(401).json({ error: 'No token provided' });
+  }
+  try {
+    const decoded = jwt.verify(token, config.JWT_SECRET);
+    res.json({
+      success: true,
+      user: {
+        id: decoded.id,
+        username: 'admin',
+        firstName: 'Administrator',
+        lastName: 'Sistem',
+        role: decoded.role
+      }
+    });
+  } catch (error) {
+    res.status(401).json({ error: 'Invalid token' });
+  }
 });
 
-// Companies routes
-app.get('/api/companies', auth, async (req, res) => {
+// Middleware for protecting routes
+const authMiddleware = (req, res, next) => {
+  const token = req.headers['authorization']?.split(' ')[1];
+  if (!token) {
+    return res.status(401).json({ error: 'No token provided' });
+  }
   try {
-    const { page = 1, limit = 10, search = '', status = '' } = req.query;
+    const decoded = jwt.verify(token, config.JWT_SECRET);
+    req.user = decoded;
+    next();
+  } catch (error) {
+    res.status(401).json({ error: 'Invalid token' });
+  }
+};
+
+// Company routes
+app.get('/api/companies', authMiddleware, async (req, res) => {
+  try {
+    const Company = require('./models/Company');
+    const { search, status, page = 1, limit = 50 } = req.query;
     
     let query = {};
-    
     if (search) {
       query.$or = [
         { name: { $regex: search, $options: 'i' } },
@@ -174,7 +204,6 @@ app.get('/api/companies', auth, async (req, res) => {
         { email: { $regex: search, $options: 'i' } }
       ];
     }
-    
     if (status) {
       query.status = status;
     }
@@ -186,177 +215,94 @@ app.get('/api/companies', auth, async (req, res) => {
 
     const total = await Company.countDocuments(query);
 
+    res.json({ 
+      success: true, 
+      data: companies, 
+      pagination: { 
+        current: parseInt(page), 
+        pages: Math.ceil(total / limit), 
+        total: total 
+      } 
+    });
+  } catch (error) {
+    console.error('Error fetching companies:', error);
+    res.status(500).json({ error: 'Error fetching companies' });
+  }
+});
+
+app.post('/api/companies', authMiddleware, async (req, res) => {
+  try {
+    const Company = require('./models/Company');
+    const companyData = {
+      ...req.body,
+      createdBy: req.user.id
+    };
+    const newCompany = new Company(companyData);
+    await newCompany.save();
+    res.status(201).json({ success: true, data: newCompany, message: 'Company created successfully' });
+  } catch (error) {
+    console.error('Error creating company:', error);
+    res.status(400).json({ error: error.message });
+  }
+});
+
+app.put('/api/companies/:id', authMiddleware, async (req, res) => {
+  try {
+    const Company = require('./models/Company');
+    const updatedCompany = await Company.findByIdAndUpdate(
+      req.params.id, 
+      { ...req.body, updatedAt: new Date() }, 
+      { new: true, runValidators: true }
+    );
+    if (!updatedCompany) {
+      return res.status(404).json({ error: 'Company not found' });
+    }
+    res.json({ success: true, data: updatedCompany, message: 'Company updated successfully' });
+  } catch (error) {
+    console.error('Error updating company:', error);
+    res.status(400).json({ error: error.message });
+  }
+});
+
+app.delete('/api/companies/:id', authMiddleware, async (req, res) => {
+  try {
+    const Company = require('./models/Company');
+    const deletedCompany = await Company.findByIdAndDelete(req.params.id);
+    if (!deletedCompany) {
+      return res.status(404).json({ error: 'Company not found' });
+    }
+    res.json({ success: true, message: 'Company deleted successfully' });
+  } catch (error) {
+    console.error('Error deleting company:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// File upload routes
+app.post('/api/upload', authMiddleware, upload.single('file'), (req, res) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({ error: 'No file uploaded' });
+    }
     res.json({
       success: true,
-      data: companies,
-      pagination: {
-        current: parseInt(page),
-        pages: Math.ceil(total / limit),
-        total
+      message: 'File uploaded successfully',
+      file: {
+        filename: req.file.filename,
+        originalName: req.file.originalname,
+        path: req.file.path,
+        size: req.file.size
       }
     });
   } catch (error) {
-    console.error('Get companies error:', error);
-    res.status(500).json({ error: 'Server error' });
+    console.error('Error uploading file:', error);
+    res.status(500).json({ error: 'Error uploading file' });
   }
 });
 
-app.get('/api/companies/:id', auth, async (req, res) => {
-  try {
-    const company = await Company.findById(req.params.id);
-    if (!company) {
-      return res.status(404).json({ error: 'Company not found' });
-    }
-
-    res.json({
-      success: true,
-      data: company
-    });
-  } catch (error) {
-    console.error('Get company error:', error);
-    res.status(500).json({ error: 'Server error' });
-  }
+// Start server
+app.listen(config.PORT, () => {
+  console.log(`🚀 Backend running on port ${config.PORT}`);
+  console.log(`Environment: ${config.NODE_ENV}`);
+  console.log(`MongoDB URI: ${config.MONGODB_URI}`);
 });
-
-app.post('/api/companies', auth, async (req, res) => {
-  try {
-    const { name, license, address, phone, email, status, contactPerson, notes } = req.body;
-    
-    if (!name || !license || !address || !phone || !email) {
-      return res.status(400).json({ error: 'Missing required fields' });
-    }
-
-    const company = new Company({
-      name,
-      license,
-      address,
-      phone,
-      email,
-      status: status || 'active',
-      contactPerson: contactPerson || '',
-      notes: notes || ''
-    });
-    
-    await company.save();
-
-    res.status(201).json({
-      success: true,
-      data: company,
-      message: 'Company created successfully'
-    });
-  } catch (error) {
-    console.error('Create company error:', error);
-    if (error.code === 11000) {
-      return res.status(400).json({ error: 'License already exists' });
-    }
-    res.status(500).json({ error: 'Server error' });
-  }
-});
-
-app.put('/api/companies/:id', auth, async (req, res) => {
-  try {
-    const { name, license, address, phone, email, status, contactPerson, notes } = req.body;
-
-    const company = await Company.findByIdAndUpdate(
-      req.params.id,
-      {
-        name: name || company.name,
-        license: license || company.license,
-        address: address || company.address,
-        phone: phone || company.phone,
-        email: email || company.email,
-        status: status || company.status,
-        contactPerson: contactPerson !== undefined ? contactPerson : company.contactPerson,
-        notes: notes !== undefined ? notes : company.notes
-      },
-      { new: true, runValidators: true }
-    );
-
-    if (!company) {
-      return res.status(404).json({ error: 'Company not found' });
-    }
-
-    res.json({
-      success: true,
-      data: company,
-      message: 'Company updated successfully'
-    });
-  } catch (error) {
-    console.error('Update company error:', error);
-    res.status(500).json({ error: 'Server error' });
-  }
-});
-
-app.delete('/api/companies/:id', auth, async (req, res) => {
-  try {
-    const company = await Company.findByIdAndDelete(req.params.id);
-    if (!company) {
-      return res.status(404).json({ error: 'Company not found' });
-    }
-
-    res.json({
-      success: true,
-      message: 'Company deleted successfully'
-    });
-  } catch (error) {
-    console.error('Delete company error:', error);
-    res.status(500).json({ error: 'Server error' });
-  }
-});
-
-app.post('/api/companies/bulk-delete', auth, async (req, res) => {
-  try {
-    const { ids } = req.body;
-    if (!ids || !Array.isArray(ids)) {
-      return res.status(400).json({ error: 'Invalid IDs provided' });
-    }
-
-    const result = await Company.deleteMany({ _id: { $in: ids } });
-
-    res.json({
-      success: true,
-      message: `${result.deletedCount} companies deleted successfully`
-    });
-  } catch (error) {
-    console.error('Bulk delete companies error:', error);
-    res.status(500).json({ error: 'Server error' });
-  }
-});
-
-// Health check
-app.get('/api/health', (req, res) => {
-  res.json({
-    success: true,
-    message: 'Cashpot V7 Backend is running',
-    timestamp: new Date().toISOString(),
-    version: '7.0.1',
-    database: mongoose.connection.readyState === 1 ? 'Connected' : 'Disconnected'
-  });
-});
-
-// Error handling middleware
-app.use((err, req, res, next) => {
-  console.error('Error:', err);
-  res.status(500).json({
-    success: false,
-    error: 'Internal server error'
-  });
-});
-
-// 404 handler
-app.use('*', (req, res) => {
-  res.status(404).json({
-    success: false,
-    error: 'Route not found'
-  });
-});
-
-const PORT = process.env.PORT || 3001;
-app.listen(PORT, () => {
-  console.log(`🚀 Cashpot V7 Backend running on port ${PORT}`);
-  console.log(`📊 Environment: ${process.env.NODE_ENV || 'production'}`);
-  console.log(`🔗 Health check: http://localhost:${PORT}/api/health`);
-  console.log(`🔐 Login: admin / admin123`);
-});
-
-module.exports = app;
