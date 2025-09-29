@@ -12,6 +12,14 @@ import Layout from './components/Layout';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import './App.css';
 
+function App() {
+  return (
+    <AuthProvider>
+      <AppContent />
+    </AuthProvider>
+  );
+}
+
 function AppContent() {
   const { user, loading } = useAuth();
 
@@ -52,14 +60,6 @@ function AppContent() {
         </Routes>
       </Layout>
     </Router>
-  );
-}
-
-function App() {
-  return (
-    <AuthProvider>
-      <AppContent />
-    </AuthProvider>
   );
 }
 
