@@ -2,9 +2,9 @@
   "name": "cashpot-v7-backend",
   "version": "7.0.1",
   "description": "Cashpot V7 Backend API",
-  "main": "railway-backend.js",
+  "main": "backend/index.js",
   "scripts": {
-    "start": "node railway-backend.js"
+    "start": "node backend/index.js"
   },
   "dependencies": {
     "express": "^4.18.2",
