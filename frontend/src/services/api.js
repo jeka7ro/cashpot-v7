@@ -1,6 +1,8 @@
 import axios from 'axios';
 
-const API_BASE_URL = 'https://cashpot-v7-backend.onrender.com/api';
+const API_BASE_URL = process.env.NODE_ENV === 'production' 
+  ? 'https://cashpot-v7-backend.onrender.com/api'
+  : 'http://localhost:3001/api';
 
 const api = axios.create({
   baseURL: API_BASE_URL,
