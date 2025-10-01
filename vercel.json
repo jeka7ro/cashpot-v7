@@ -4,8 +4,14 @@
   "framework": "vite",
   "installCommand": "npm install",
   "devCommand": "npm run dev",
+  "rewrites": [
+    {
+      "source": "/(.*)",
+      "destination": "/index.html"
+    }
+  ],
   "env": {
-    "VITE_API_URL": "https://cashpot-v7-backend.onrender.com/api",
-    "VITE_APP_VERSION": "7.0.6"
+    "VITE_API_URL": "https://cashpot-v7-backend.onrender.com",
+    "VITE_APP_VERSION": "7.0.7"
   }
 }
