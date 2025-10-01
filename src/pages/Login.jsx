@@ -54,7 +54,7 @@ const Login = () => {
           <h1 className="text-4xl font-bold text-gradient-primary mb-2">Sistem Management</h1>
           <p className="text-slate-600 font-medium">Aplicație de Management</p>
           <div className="mt-2 text-sm text-slate-500">
-            v7.0.6 - Build: 30.09.2025, 17:50 - PRODUCTION
+            v7.0.7 - Build: 01.10.2025, 10:26 - PRODUCTION
           </div>
         </div>
 
