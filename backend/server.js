@@ -43,8 +43,26 @@ const limiter = rateLimit({
 app.use(limiter)
 
 // CORS configuration
+const allowedOrigins = [
+  'http://localhost:5173',
+  'https://cashpot-v7.vercel.app',
+  'https://cashpot-v7-p6as.vercel.app',
+  'https://cashpot-v7-p6as-git-main-jeka7ros-projects.vercel.app',
+  process.env.FRONTEND_URL
+].filter(Boolean)
+
 app.use(cors({
-  origin: process.env.FRONTEND_URL || 'http://localhost:5173',
+  origin: function(origin, callback) {
+    // Allow requests with no origin (like mobile apps or curl requests)
+    if (!origin) return callback(null, true)
+    
+    // Check if the origin is allowed or if it's a Vercel preview deployment
+    if (allowedOrigins.includes(origin) || origin.includes('.vercel.app')) {
+      callback(null, true)
+    } else {
+      callback(new Error('Not allowed by CORS'))
+    }
+  },
   credentials: true
 }))
 
